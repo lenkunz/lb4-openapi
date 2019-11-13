@@ -89,9 +89,14 @@ export class Lb4OpenApiFixComponent implements Component {
                                         .replace(/^controllers\./, '')
                                         .replace(/Controller$/, '');
             }
+
+            let operationName = operation;
+            if (spec['x-operation-name']) {
+                operationName = spec['x-operation-name'];
+            }
         
             spec['x-controller-name'] = localControllerName;
-            spec['operationId'] = `${localControllerName}_${operation}`;
+            spec['operationId'] = `${localControllerName}_${operationName}`;
             
             endpoint.spec = spec;
         }      
