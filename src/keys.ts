@@ -1,6 +1,7 @@
 import { Lb4OpenApiFixConfig, Lb4OpenApiFixComponent } from "./Lb4OpenApiFix.component";
 import { BindingKey, MetadataAccessor } from "@loopback/core";
-import { Lb4OpenApiComponent } from ".";
+import { Lb4OpenApiComponent } from "./Lb4OpenApi.component";
+import { PartOfMetadata } from "./decorator";
 
 export namespace Lb4OpenApiPrivateKeys {
     export const COMPONENT_FIX = BindingKey.create<Lb4OpenApiFixComponent>(
@@ -12,7 +13,7 @@ export namespace Lb4OpenApiPrivateKeys {
     );    
     
     export const CONTROLLER_NAME = MetadataAccessor.create<
-        String,
+        PartOfMetadata,
         ClassDecorator
     >('souta:lb4OpenApi:controllerName');
 }

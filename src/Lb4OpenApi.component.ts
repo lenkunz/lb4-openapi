@@ -2,6 +2,7 @@ import { bind, ContextTags, inject, CoreBindings, Component, Binding, Reflector 
 import { Lb4OpenApiPrivateKeys, Lb4OpenApiKeys } from './keys';
 import { RestApplication, OperationObject } from '@loopback/rest';
 import { Lb4OpenApi } from './lib';
+import { PartOfMetadata } from './decorator';
 
 export interface Lb4OpenApiConfig {
 }
@@ -50,14 +51,16 @@ export class Lb4OpenApiComponent implements Component {
     async _applyNameChange(binding: Readonly<Binding<any>>) {
         const ctor = Lb4OpenApi.getConstructor(binding);
 
-        const targetName = Reflector.getMetadata(
+        const metadata = Reflector.getMetadata(
             Lb4OpenApiPrivateKeys.CONTROLLER_NAME.toString(),
-            ctor.prototype
-        ) as String;
+            ctor,
+        ) as PartOfMetadata;
 
-        if (!targetName) {
+        if (!metadata) {
             return;
         }
+
+        let targetName = metadata.name;
 
         let endpoints = Lb4OpenApi.getMethodSpec(ctor);
 
@@ -71,9 +74,7 @@ export class Lb4OpenApiComponent implements Component {
             }
             Lb4OpenApi.SetSpecModified(spec, 'controller-name');
         
-            if(!spec['x-controller-name']) {
-                spec['x-controller-name'] = targetName;
-            }
+            spec['x-controller-name'] = targetName;
 
             endpoint.spec = spec;
         }
