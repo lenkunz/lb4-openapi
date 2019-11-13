@@ -1,93 +1,153 @@
-import { OpenApiSpec, PathItemObject, OperationObject, ParameterObject, ReferenceObject, RestServer, RequestContext } from "@loopback/rest";
+import { OpenApiSpec, PathItemObject, OperationObject, ParameterObject, ReferenceObject, RestServer, RequestContext, RestEndpoint, Trie } from "@loopback/rest";
+import { MetadataInspector, DecoratorFactory, MetadataAccessor, Reflector, Binding } from "@loopback/core";
 
 export namespace Lb4OpenApiSpec {
-    function findAndRemoveInvalidExamplesProperty(
-        schema: any
-    ) {
-        if (Array.isArray(schema)) {
-            for(const value in schema) {
-                findAndRemoveInvalidExamplesProperty(schema[value]);
+    export function InterceptRestServerMetadata(rest: RestServer) {
+        const start = rest.start.bind(rest);
+
+        rest.start = async () => {
+            await _modifyControllerSpec(rest);
+            return await start();
+        };
+    }
+
+    async function _modifyControllerSpec(rest: RestServer) {
+        for(let binding of rest.find('controllers.*')) {
+            await _changeControllerName(binding);
+            await _modifyParameterSpec(binding);
+        }
+    }
+
+    const METHODS_KEY = MetadataAccessor.create<
+                            Partial<RestEndpoint>,
+                            MethodDecorator
+                        >('openapi-v3:methods');
+
+    function _getModifications(spec: any): string[]{
+        if (!spec) {
+            return [];
+        }
+
+        let modifications = spec['x-souta-modifications'] as string[] || [];
+
+        if (!Array.isArray(modifications)) {
+            return [];
+        }
+
+        return modifications;
+    }
+
+    function _setModified(
+        spec: any, 
+        modificationName: string
+    ): void {
+        let modifications = _getModifications(spec);        
+
+        modifications.push(modificationName);
+
+        spec['x-souta-modifications'] = modifications;    
+    }
+
+    function _isModified(spec: any, modificationName: string): boolean {
+        let modifications = _getModifications(spec);
+
+        if (modifications.indexOf(modificationName) === -1) {
+            return false;
+        }
+
+        return true;
+    }
+    
+    async function _changeControllerName(binding: Readonly<Binding<any>>) {
+        const controllerName = binding.key
+                                .replace(/^controllers\./, '')
+                                .replace(/Controller$/, '');
+
+        const ctor = binding.valueConstructor as Function;
+    
+        if (!ctor) {
+            return;
+        }                            
+    
+        let endpoints = MetadataInspector.getAllMethodMetadata<RestEndpoint>(
+            METHODS_KEY,
+            ctor.prototype,
+        ) || {};
+    
+        endpoints = DecoratorFactory.cloneDeep(endpoints);
+    
+        for (const operation in endpoints) {
+            const endpoint = endpoints[operation];
+    
+            const spec = (endpoint.spec || {}) as OperationObject;
+
+            if (_isModified(spec, 'controller-name')) {
+                continue;
             }
-        } else {
-            for(const key in schema) {
-                if (key === 'examples') {
-                    schema[key] = undefined;
-                } else if (typeof schema[key] === 'object') {
-                    findAndRemoveInvalidExamplesProperty(schema[key]);
+            _setModified(spec, 'controller-name');
+        
+            if(!spec['x-controller-name']) {
+                spec['x-controller-name'] = controllerName;
+            }
+    
+            if(!spec['operationId']) {
+                spec['operationId'] = `${controllerName}_${operation}`;
+            }
+            
+            endpoint.spec = spec;
+        }      
+    
+        MetadataInspector.defineMetadata(
+            METHODS_KEY,
+            endpoints,
+            ctor.prototype,
+        );        
+    }
+
+    const PARAMETERS_KEY = MetadataAccessor.create<
+                                ParameterObject,
+                                ParameterDecorator
+                            >('openapi-v3:parameters');
+
+    async function _modifyParameterSpec(binding: Readonly<Binding<any>>) {
+        let ctor = binding.valueConstructor as Function;
+        
+        let ctorParams = Reflector.getMetadata(
+                                PARAMETERS_KEY.toString(),
+                                ctor.prototype,
+                            ) as { [index:string]: ParameterObject[] };
+    
+        for (const operation in ctorParams) {
+            const params = ctorParams[operation];
+    
+            for(const param in params) {
+                if (params[param]) {
+                    _findAndReplaceExample(params[param]);
                 }
             }
         }
+    
+        Reflector.defineMetadata(
+            PARAMETERS_KEY.toString(),
+            ctorParams,
+            ctor.prototype,
+        )    
     }
 
-    function findAndFixPropertyOfOperation(operation: OperationObject) {
-        // Fix the spec name, remove suffix 'Controller' from the name.
-        let controllerName = operation['x-controller-name'] as string;
-        if (controllerName && typeof controllerName === 'string') {
-            controllerName = controllerName.trim();
+    function _findAndReplaceExample(prop: any) {
+        if(typeof prop !== 'object') {
+            return;
+        }
 
-            if (
-                controllerName.toLowerCase().endsWith('controller')
-            ) {
-                controllerName = controllerName.substring(
-                    0, 
-                    controllerName.length - 'controller'.length
-                );
+        const keys = Object.keys(prop);
 
-                operation['x-controller-name'] = controllerName;
+        keys.forEach(key => {
+            if (key === 'examples' && Array.isArray(prop[key])) {
+                prop.example = prop[key][0];
+                delete prop[key];
+            } else {
+                _findAndReplaceExample(prop[key]);
             }
-        }
-
-        operation.tags = [controllerName];
-
-        // Fix operationId prefix separator.
-        // Change from dot to underscore.
-        let operationId = operation.operationId as string;
-        if (operationId && typeof operationId === 'string') {
-            const operationIdParts = operationId.split('.');
-
-            operationIdParts[0] = controllerName;
-
-            operation.operationId = operationIdParts.join('_');
-        }
-    }
-
-    export function shapeApiSpecToMeetValidation(spec: OpenApiSpec) {
-        const paths = spec.paths;
-
-        for(const endpoint in paths) {
-            const endpointInfo = paths[endpoint] as PathItemObject;
-
-            for(const method in endpointInfo) {
-                if ([
-                        'get',
-                        'put', 
-                        'post', 
-                        'delete', 
-                        'options', 
-                        'head', 
-                        'patch', 
-                        'trace'
-                    ].indexOf(method) !== -1
-                ) {
-                    findAndFixPropertyOfOperation(endpointInfo[method]);
-                    
-                    if (endpointInfo[method].parameters) {
-                        findAndRemoveInvalidExamplesProperty(endpointInfo[method].parameters);
-                    }
-                } else if (method === 'paramters') {
-                    findAndRemoveInvalidExamplesProperty(endpointInfo[method]);
-                }
-            }
-        }
-
-        return spec;
-    }
-
-    export function modifyRestServer(rest: RestServer) {
-        const getApiSpec = rest.getApiSpec.bind(rest);
-        rest.getApiSpec = (requestContext?: RequestContext) => {
-          const spec = getApiSpec(requestContext);
-          return shapeApiSpecToMeetValidation(spec);
-        };        
+        })
     }
 }

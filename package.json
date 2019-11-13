@@ -1,6 +1,6 @@
 {
   "name": "@souta/lb4-openapi-fix",
-  "version": "1.22.9",
+  "version": "1.23.0",
   "description": "Loopback component as a temporary fix of OpenAPI format to use with openapi-generator project.",
   "main": "index.js",
   "scripts": {

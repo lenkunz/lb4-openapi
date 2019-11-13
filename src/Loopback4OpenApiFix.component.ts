@@ -9,6 +9,6 @@ export class Loopback4OpenApiFixComponent implements Component {
         @inject(CoreBindings.APPLICATION_INSTANCE)
         private application: RestApplication,        
     ) {
-        Lb4OpenApiSpec.modifyRestServer(application.restServer);
+        Lb4OpenApiSpec.InterceptRestServerMetadata(application.restServer);
     }
 }
