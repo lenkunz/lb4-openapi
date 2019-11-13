@@ -75,7 +75,11 @@ export class Lb4OpenApiComponent implements Component {
             return;
         }
 
-        let targetName = metadata.name;
+        const {
+            name: targetName,
+            operationSuffix,
+            noDuplicateSuffix
+        } = metadata;
 
         let endpoints = Lb4OpenApi.getMethodSpec(ctor);
 
@@ -90,6 +94,14 @@ export class Lb4OpenApiComponent implements Component {
             Lb4OpenApi.SetSpecModified(spec, 'controller-name');
         
             spec['x-controller-name'] = targetName;
+
+            if (noDuplicateSuffix) {
+                if (!operation.toLowerCase().endsWith(operationSuffix)){
+                    spec['x-operation-name'] = `${operation}${operationSuffix}`;
+                }
+            } else {
+                spec['x-operation-name'] = `${operation}${operationSuffix}`;
+            }
 
             endpoint.spec = spec;
         }
