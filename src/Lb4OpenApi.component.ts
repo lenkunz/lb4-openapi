@@ -76,6 +76,10 @@ export class Lb4OpenApiComponent implements Component {
         
             spec['x-controller-name'] = targetName;
 
+            if (Lb4OpenApi.IsSpecModified(spec, 'controller-name-strip')) {
+                spec['operationId'] = `${targetName}_${operation}`;
+            }
+
             endpoint.spec = spec;
         }
     
