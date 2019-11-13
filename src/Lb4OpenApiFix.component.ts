@@ -35,7 +35,7 @@ export class Lb4OpenApiFixComponent implements Component {
 
     private _interceptRestServerMetadata() {
         const rest = this.application.restServer;
-        const start = rest.start.bind(this);
+        const start = rest.start.bind(rest);
 
         rest.start = async () => {
             await this._modifyControllerSpec();
