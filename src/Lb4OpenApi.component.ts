@@ -3,12 +3,20 @@ import { Lb4OpenApiPrivateKeys, Lb4OpenApiKeys } from './keys';
 import { RestApplication, OperationObject } from '@loopback/rest';
 import { Lb4OpenApi } from './lib';
 import { PartOfMetadata } from './decorator';
+import { Lb4OpenApiFixConfig, Lb4OpenApiFixComponent } from './Lb4OpenApiFix.component';
 
 export interface Lb4OpenApiConfig {
+    withFixes: boolean;
+    fixesConfig: Lb4OpenApiFixConfig;
 }
 
 const defaultConfig: Lb4OpenApiConfig = {
-}
+    withFixes: true,
+    fixesConfig: {
+        modifyParameter: true,
+        useControllerRenamer: true,
+    }
+};
 
 @bind({tags: {[ContextTags.KEY]: Lb4OpenApiPrivateKeys.COMPONENT}})
 export class Lb4OpenApiComponent implements Component {
@@ -26,6 +34,13 @@ export class Lb4OpenApiComponent implements Component {
             ...defaultConfig,
             ...config,
         };
+
+        if (this.config.withFixes) {
+            new Lb4OpenApiFixComponent(
+                application,
+                this.config.fixesConfig || {},
+            )
+        }
 
         this._interceptRestServerMetadata();
     }
@@ -75,10 +90,6 @@ export class Lb4OpenApiComponent implements Component {
             Lb4OpenApi.SetSpecModified(spec, 'controller-name');
         
             spec['x-controller-name'] = targetName;
-
-            if (Lb4OpenApi.IsSpecModified(spec, 'controller-name-strip')) {
-                spec['operationId'] = `${targetName}_${operation}`;
-            }
 
             endpoint.spec = spec;
         }
