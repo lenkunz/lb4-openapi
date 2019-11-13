@@ -10,7 +10,7 @@ const defaultConfig: Lb4OpenApiConfig = {
 }
 
 @bind({tags: {[ContextTags.KEY]: Lb4OpenApiPrivateKeys.COMPONENT}})
-export class Loopback4OpenApiComponent implements Component {
+export class Lb4OpenApiComponent implements Component {
     private config: Lb4OpenApiConfig;
 
     constructor(

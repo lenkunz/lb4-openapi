@@ -1,12 +1,13 @@
-import { Loopback4OpenApiFixComponent, Lb4OpenApiFixConfig } from "./Lb4OpenApiFix.component";
-import { BindingKey, MetadataAccessor, ClassDecoratorFactory } from "@loopback/core";
+import { Lb4OpenApiFixConfig, Lb4OpenApiFixComponent } from "./Lb4OpenApiFix.component";
+import { BindingKey, MetadataAccessor } from "@loopback/core";
+import { Lb4OpenApiComponent } from ".";
 
 export namespace Lb4OpenApiPrivateKeys {
-    export const COMPONENT_FIX = BindingKey.create<Loopback4OpenApiFixComponent>(
+    export const COMPONENT_FIX = BindingKey.create<Lb4OpenApiFixComponent>(
         'components.Lb4OpenApiFixComponent',
     );    
 
-    export const COMPONENT = BindingKey.create<Loopback4OpenApiFixComponent>(
+    export const COMPONENT = BindingKey.create<Lb4OpenApiComponent>(
         'components.Lb4OpenApiFixComponent',
     );    
     

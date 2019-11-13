@@ -14,7 +14,7 @@ const defaultConfig: Lb4OpenApiFixConfig = {
 }
 
 @bind({tags: {[ContextTags.KEY]: Lb4OpenApiPrivateKeys.COMPONENT_FIX}})
-export class Loopback4OpenApiFixComponent implements Component {
+export class Lb4OpenApiFixComponent implements Component {
     private config: Lb4OpenApiFixConfig;
 
     constructor(
