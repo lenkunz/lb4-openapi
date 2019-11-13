@@ -8,7 +8,7 @@ export namespace Lb4OpenApiPrivateKeys {
     );    
 
     export const COMPONENT = BindingKey.create<Lb4OpenApiComponent>(
-        'components.Lb4OpenApiFixComponent',
+        'components.Lb4OpenApiComponent',
     );    
     
     export const CONTROLLER_NAME = MetadataAccessor.create<
