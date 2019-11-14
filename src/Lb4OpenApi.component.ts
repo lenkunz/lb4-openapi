@@ -96,7 +96,7 @@ export class Lb4OpenApiComponent implements Component {
             spec['x-controller-name'] = targetName;
 
             if (noDuplicateSuffix) {
-                if (!operation.toLowerCase().endsWith(operationSuffix)){
+                if (!operation.toLowerCase().endsWith(operationSuffix.toLowerCase())){
                     spec['x-operation-name'] = `${operation}${operationSuffix}`;
                 }
             } else {

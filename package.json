@@ -1,6 +1,6 @@
 {
   "name": "@souta/lb4-openapi",
-  "version": "1.1.7",
+  "version": "1.1.9",
   "description": "Loopback component as a helper (and some fixes).",
   "main": "index.js",
   "scripts": {
